@@ -1,0 +1,25 @@
+{
+  "entities": {
+    "Attraction": {
+      "title": "Attraction",
+      "description": "A tourist attraction in Taoyuan.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "categories": { "type": "array", "items": { "type": "string" } },
+        "lat": { "type": "number" },
+        "lng": { "type": "number" },
+        "description": { "type": "string" },
+        "imageUrl": { "type": "string" }
+      },
+      "required": ["id", "name", "categories", "lat", "lng", "description", "imageUrl"]
+    }
+  },
+  "firestore": {
+    "/attractions/{attractionId}": {
+      "schema": { "$ref": "Attraction" },
+      "description": "Collection of attractions."
+    }
+  }
+}

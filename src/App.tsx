@@ -1,7 +1,9 @@
 import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { MapPin, Compass, RefreshCw, X, Map as MapIcon } from 'lucide-react';
-import { attractions, Attraction } from './data';
+import { MapPin, Compass, RefreshCw, X, Map as MapIcon, Database, Grid, MapPinned, Info, Tag, Clock, Ticket } from 'lucide-react';
+import { Attraction } from './data';
+import { db } from './firebase';
+import { collection, onSnapshot, query } from 'firebase/firestore';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 
@@ -58,13 +60,44 @@ const TAOYUAN_DISTRICTS = [
 
 export default function App() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedContexts, setSelectedContexts] = useState<string[]>([]);
   const [maxDistance, setMaxDistance] = useState<number>(Infinity);
   const [userLocation, setUserLocation] = useState<{ name: string; lat: number; lng: number } | null>(null);
   
+  const [dbAttractions, setDbAttractions] = useState<Attraction[]>([]);
   const [results, setResults] = useState<Attraction[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
   
+  const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid');
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
+  const [selectedAttraction, setSelectedAttraction] = useState<Attraction | null>(null);
+
+  // 取得目前資料庫中所有的情境標籤
+  const availableContexts = Array.from(new Set(dbAttractions.flatMap(a => a.contextTags || []))).sort();
+
+  // 一進來網頁先掛載 Firebase 資料庫即時連線
+  useEffect(() => {
+    const q = query(collection(db, 'attractions'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data: Attraction[] = [];
+      snapshot.forEach(doc => {
+        data.push({ id: doc.id, ...doc.data() } as Attraction);
+      });
+      setDbAttractions(data);
+      
+      // 如果是最一開始載入，我們從抓到的資料隨機推 5 個
+      if (isInitializing && data.length > 0) {
+        setResults([...data].sort(() => 0.5 - Math.random()).slice(0, 5));
+        setIsInitializing(false);
+      }
+    }, (error) => {
+      console.error("載入 Firebase 資料失敗:", error);
+      setIsInitializing(false);
+    });
+
+    return () => unsubscribe();
+  }, [isInitializing]);
 
   // 地圖點擊事件處理
   function LocationPicker() {
@@ -89,16 +122,29 @@ export default function App() {
     );
   };
 
+  const toggleContext = (ctx: string) => {
+    setSelectedContexts(prev => 
+      prev.includes(ctx) ? prev.filter(c => c !== ctx) : [...prev, ctx]
+    );
+  };
+
   const handleGenerate = useCallback(() => {
+    if (dbAttractions.length === 0) return;
     setIsGenerating(true);
     setResults([]);
 
     setTimeout(() => {
-      let filtered = attractions;
+      let filtered = [...dbAttractions];
 
       if (selectedCategories.length > 0) {
         filtered = filtered.filter(item => 
           item.categories.some(cat => selectedCategories.includes(cat))
+        );
+      }
+
+      if (selectedContexts.length > 0) {
+        filtered = filtered.filter(item => 
+          item.contextTags && item.contextTags.some(ctx => selectedContexts.includes(ctx))
         );
       }
 
@@ -113,7 +159,18 @@ export default function App() {
       setResults(shuffled.slice(0, 5));
       setIsGenerating(false);
     }, 600);
-  }, [selectedCategories, maxDistance, userLocation]);
+  }, [selectedCategories, selectedContexts, maxDistance, userLocation, dbAttractions]);
+
+  function ResultMapBounds({ markers }: { markers: Attraction[] }) {
+    const map = useMap();
+    useEffect(() => {
+      if (markers.length > 0) {
+        const bounds = L.latLngBounds(markers.map(m => [m.lat, m.lng]));
+        map.fitBounds(bounds, { padding: [50, 50] });
+      }
+    }, [markers, map]);
+    return null;
+  }
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-bg text-text-main font-sans">
@@ -124,9 +181,6 @@ export default function App() {
             <Compass size={20} />
           </div>
           <h1 className="text-2xl font-extrabold text-primary tracking-tight">桃園趣哪玩</h1>
-        </div>
-        <div className="text-sm text-text-sub hidden sm:block">
-          資料庫已載入 {attractions.length} 個精選景點
         </div>
       </header>
 
@@ -204,7 +258,7 @@ export default function App() {
                     onClick={() => toggleCategory(cat)}
                     className={`px-3 py-1.5 rounded-[20px] text-[13px] cursor-pointer border transition-all ${
                       isActive 
-                        ? 'bg-primary border-primary text-white' 
+                        ? 'bg-primary border-primary text-white shadow-sm' 
                         : 'bg-bg border-transparent hover:border-border text-text-main'
                     }`}
                   >
@@ -215,24 +269,59 @@ export default function App() {
             </div>
           </div>
 
-          {/* Sidebar Footer with Ad */}
-          <div className="mt-auto pt-5 mt-4 border-t border-border hidden md:block">
-            <div className="w-full h-[180px] bg-bg rounded-lg flex items-center justify-center text-slate-400 text-xs border border-border">
-              贊助商廣告空間
+          {/* Filter Group: Contexts (Tags) */}
+          {availableContexts.length > 0 && (
+            <div className="flex flex-col gap-3">
+               <span className="text-[14px] font-semibold text-text-sub uppercase tracking-[0.5px]">情境篩選</span>
+               <div className="flex flex-wrap gap-2">
+                {availableContexts.map(ctx => {
+                  const isActive = selectedContexts.includes(ctx);
+                  return (
+                    <button
+                      key={ctx}
+                      onClick={() => toggleContext(ctx)}
+                      className={`px-3 py-1.5 rounded-[20px] text-[13px] cursor-pointer border transition-all ${
+                        isActive 
+                          ? 'bg-accent border-accent text-white shadow-sm' 
+                          : 'bg-bg border-transparent hover:border-border text-text-main'
+                      }`}
+                    >
+                      # {ctx}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          )}
         </aside>
 
         {/* Content Area */}
         <main className="flex-1 p-6 md:p-8 flex flex-col gap-6 bg-[#f8fafc] overflow-y-auto">
-          {/* Top Banner Ad */}
-          <div className="w-full h-[90px] bg-[#e2e8f0] rounded-xl border-2 border-dashed border-[#cbd5e1] flex items-center justify-center text-[#94a3b8] text-sm shrink-0">
-            廣告投放區域 (Banner 970x90)
-          </div>
-
           {/* Controls */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <h2 className="text-2xl font-bold text-text-main">為您推薦 5 個好去處</h2>
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-3">
+                <h2 className="text-2xl font-bold text-text-main">為您推薦 5 個好去處</h2>
+                <span className="text-xs bg-accent/10 border border-accent/20 text-accent px-2 py-1 rounded flex items-center gap-1 font-semibold">
+                   <Database size={12} />
+                   ({dbAttractions.length})
+                </span>
+              </div>
+              <div className="flex items-center gap-1 bg-white p-1 rounded-lg border border-border self-start">
+                <button 
+                  onClick={() => setViewMode('grid')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === 'grid' ? 'bg-bg text-primary shadow-sm' : 'text-text-sub hover:text-text-main'}`}
+                >
+                  <Grid size={16} /> 網格模式
+                </button>
+                <button 
+                  onClick={() => setViewMode('map')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === 'map' ? 'bg-bg text-primary shadow-sm' : 'text-text-sub hover:text-text-main'}`}
+                >
+                  <MapPinned size={16} /> 地圖模式
+                </button>
+              </div>
+            </div>
             <button
               onClick={handleGenerate}
               disabled={isGenerating}
@@ -246,13 +335,18 @@ export default function App() {
           {/* Results Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 flex-1 content-start">
             <AnimatePresence mode="popLayout">
-              {results.length === 0 && !isGenerating ? (
+              {isInitializing ? (
+                <div className="col-span-full h-full min-h-[300px] flex flex-col items-center justify-center text-slate-400">
+                   <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent mb-4"></div>
+                   <p className="text-sm">正在從雲端載入最新景點資料庫...</p>
+                </div>
+              ) : results.length === 0 && !isGenerating ? (
                 <motion.div 
                   initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                   className="col-span-full h-full min-h-[300px] flex flex-col items-center justify-center text-slate-400"
                 >
                   <Compass size={64} className="mx-auto mb-4 opacity-20" />
-                  <p className="text-lg">點擊產生按鈕開始探索桃園！</p>
+                  <p className="text-lg">找不到符合條件的景點，請試著放寬篩選條件！</p>
                 </motion.div>
               ) : results.length === 0 && isGenerating ? (
                 <div className="col-span-full h-full min-h-[300px] flex items-center justify-center">
@@ -274,47 +368,99 @@ export default function App() {
                     transition={{ delay: index * 0.05 }}
                     className="bg-card-bg rounded-2xl p-4 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)] border border-border flex flex-col gap-3 relative group"
                   >
-                    <div className="w-full h-[120px] bg-slate-100 rounded-lg overflow-hidden shrink-0">
+                    <div 
+                      className="w-full h-[140px] bg-slate-100 rounded-lg overflow-hidden shrink-0 cursor-pointer relative"
+                      onClick={() => setSelectedAttraction(item)}
+                    >
                       <img 
-                        src={`https://picsum.photos/seed/${item.id}/400/300`} 
+                        src={item.imageUrl} 
                         alt={item.name}
                         referrerPolicy="no-referrer"
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
+                      <div className="absolute bottom-2 left-2 flex gap-1 flex-wrap pr-2">
+                        {item.contextTags?.slice(0,2).map(tag => (
+                          <span key={tag} className="text-[10px] bg-black/60 text-white px-2 py-0.5 rounded backdrop-blur-sm">#{tag}</span>
+                        ))}
+                      </div>
                     </div>
                     
                     <div className="flex-1 flex flex-col">
-                      <h3 className="text-[18px] font-extrabold text-text-main mb-2 leading-tight tracking-wide">{item.name}</h3>
+                       <div className="flex justify-between items-start gap-2 mb-1">
+                          <h3 
+                            className="text-[18px] font-extrabold text-text-main leading-tight tracking-wide cursor-pointer hover:text-primary transition-colors"
+                            onClick={() => setSelectedAttraction(item)}
+                          >
+                            {item.name}
+                          </h3>
+                       </div>
                       <p className="text-[13px] text-text-sub leading-[1.5] line-clamp-2">
                         {item.description}
                       </p>
                     </div>
 
                     <div className="mt-auto pt-2 flex justify-between items-center bg-card-bg">
-                      {distance !== null ? (
-                        <span className="text-[12px] font-bold text-accent">
-                          距離 {distance.toFixed(1)}km
-                        </span>
-                      ) : (
+                      <div className="flex items-center gap-2">
+                        {distance !== null && (
+                          <span className="text-[12px] font-bold text-accent bg-accent/10 px-2 py-1 rounded">
+                            {distance.toFixed(1)}km
+                          </span>
+                        )}
                         <span className="text-[12px] text-text-sub flex items-center gap-1 font-bold">
-                          <MapPin size={12}/> {item.categories[0]}
+                           {item.categories[0]}
                         </span>
-                      )}
+                      </div>
                       
-                      <a
-                        href={`https://www.google.com/maps/search/?api=1&query=${item.lat},${item.lng}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="px-3 py-1.5 rounded-lg border border-primary text-primary text-[12px] font-semibold hover:bg-primary hover:text-white transition-colors text-center"
+                      <button
+                        onClick={() => setSelectedAttraction(item)}
+                        className="px-3 py-1.5 rounded-lg border border-primary/30 text-primary text-[12px] font-semibold hover:bg-primary/10 transition-colors flex items-center gap-1"
                       >
-                        Google Map
-                      </a>
+                        <Info size={14}/> 詳情
+                      </button>
                     </div>
                   </motion.div>
                 );
               })}
             </AnimatePresence>
           </div>
+          
+          {/* Map View Mode */}
+          {viewMode === 'map' && results.length > 0 && !isGenerating && (
+            <motion.div 
+               initial={{opacity: 0, y: 20}}
+               animate={{opacity: 1, y: 0}}
+               className="w-full h-full min-h-[400px] border border-border rounded-xl overflow-hidden shadow-sm relative z-0"
+               style={{ marginTop: '-1.25rem' }} // Pull up slightly over the empty grid
+            >
+              <MapContainer 
+                center={userLocation ? [userLocation.lat, userLocation.lng] : [results[0].lat, results[0].lng]} 
+                zoom={12} 
+                style={{ width: '100%', height: '100%' }}
+              >
+                <TileLayer
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                />
+                <ResultMapBounds markers={results} />
+                {userLocation && (
+                   <Marker position={[userLocation.lat, userLocation.lng]}>
+                      {/* You can customize user marker icon here if needed */}
+                   </Marker>
+                )}
+                {results.map(item => (
+                   <Marker 
+                     key={item.id} 
+                     position={[item.lat, item.lng]}
+                     eventHandlers={{
+                       click: () => setSelectedAttraction(item)
+                     }}
+                   >
+                     {/* Popup is removed to trigger detail modal directly */}
+                   </Marker>
+                ))}
+              </MapContainer>
+            </motion.div>
+          )}
         </main>
       </div>
 
@@ -357,6 +503,97 @@ export default function App() {
                   />
                   <LocationPicker />
                 </MapContainer>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Detail Modal */}
+      <AnimatePresence>
+        {selectedAttraction && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setSelectedAttraction(null)}
+            className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              onClick={e => e.stopPropagation()}
+              className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden relative"
+            >
+              <div className="relative h-64 sm:h-80 shrink-0 bg-slate-100">
+                <img 
+                  src={selectedAttraction.imageUrl} 
+                  alt={selectedAttraction.name}
+                  referrerPolicy="no-referrer"
+                  className="w-full h-full object-cover"
+                />
+                <button 
+                  onClick={() => setSelectedAttraction(null)}
+                  className="absolute top-4 right-4 p-2 bg-black/30 backdrop-blur-md hover:bg-black/50 rounded-full text-white transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="p-6 md:p-8 overflow-y-auto flex flex-col gap-6">
+                <div>
+                  <div className="flex gap-2 flex-wrap mb-3">
+                    {selectedAttraction.categories.map(c => <span key={c} className="text-xs bg-primary/10 text-primary px-2.5 py-1 rounded-md font-bold">{c}</span>)}
+                    {selectedAttraction.contextTags?.map(t => <span key={t} className="text-xs bg-accent/10 text-accent px-2.5 py-1 rounded-md font-bold flex items-center gap-1"><Tag size={12}/>{t}</span>)}
+                  </div>
+                  <h2 className="text-2xl sm:text-3xl font-extrabold text-text-main mb-2 tracking-tight">{selectedAttraction.name}</h2>
+                </div>
+
+                <div className="flex flex-col gap-4 bg-bg p-4 rounded-xl border border-border">
+                  <div className="flex items-start gap-3">
+                    <Clock size={18} className="text-primary shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="text-sm font-bold text-text-main mb-0.5">營業時間</h4>
+                      <p className="text-sm text-text-sub">{selectedAttraction.hours || "依官方公告為主"}</p>
+                    </div>
+                  </div>
+                  <div className="w-full h-[1px] bg-border"></div>
+                  <div className="flex items-start gap-3">
+                    <Ticket size={18} className="text-primary shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="text-sm font-bold text-text-main mb-0.5">門票資訊</h4>
+                      <p className="text-sm text-text-sub">{selectedAttraction.ticketInfo || "免費或依現場為主"}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-lg font-bold text-text-main mb-2">景點介紹</h4>
+                  <p className="text-[15px] text-text-sub leading-relaxed whitespace-pre-wrap">
+                    {selectedAttraction.description}
+                  </p>
+                </div>
+
+                {userLocation && (
+                  <div className="bg-accent/5 p-4 rounded-xl border border-accent/20 flex justify-between items-center">
+                    <span className="text-sm font-bold text-text-main">距離您目前設定的出發地</span>
+                    <span className="text-lg font-extrabold text-accent">
+                      {getDistanceInKm(userLocation.lat, userLocation.lng, selectedAttraction.lat, selectedAttraction.lng).toFixed(1)} 公里
+                    </span>
+                  </div>
+                )}
+                
+                  <div className="pt-4 border-t border-border mt-auto">
+                   <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedAttraction.name)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full p-4 bg-primary text-white rounded-xl text-[15px] font-bold hover:bg-primary-dark transition-colors flex items-center justify-center gap-2"
+                    >
+                      <MapPin size={18} /> 開啟 Google Maps 導航
+                    </a>
+                </div>
               </div>
             </motion.div>
           </motion.div>
