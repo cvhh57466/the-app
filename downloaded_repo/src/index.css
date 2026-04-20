@@ -1,0 +1,23 @@
+@import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+
+@theme {
+  --color-primary: #3b82f6;
+  --color-primary-dark: #1e40af;
+  --color-accent: #10b981;
+  --color-bg: #f1f5f9;
+  --color-card-bg: #ffffff;
+  --color-text-main: #1e293b;
+  --color-text-sub: #64748b;
+  --color-border: #e2e8f0;
+
+  --font-sans: "PingFang TC", "Heiti TC", "Microsoft JhengHei", sans-serif;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text-main);
+  margin: 0;
+  padding: 0;
+}
+
