@@ -6,6 +6,7 @@ import { db } from '../firebase';
 import { collection, onSnapshot, query } from 'firebase/firestore';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
+import AdBanner from '../components/AdBanner';
 
 // Fix leaflet default icons in Vite
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
@@ -306,6 +307,18 @@ export default function Explore() {
               </div>
             </div>
           )}
+
+          {/* AdSense Placement: Explore Sidebar */}
+          <div className="mt-4 pt-6 border-t border-border">
+            <div className="bg-slate-50 border border-dashed border-gray-300 rounded-xl p-3 text-center">
+              <p className="text-[11px] text-text-sub mb-2">廣告贊助</p>
+              <AdBanner 
+                dataAdSlot="6944583842" 
+                className="min-h-[250px]" 
+                dataAdFormat="vertical" // 側邊欄適合直式廣告
+              />
+            </div>
+          </div>
         </aside>
 
         {/* Content Area */}

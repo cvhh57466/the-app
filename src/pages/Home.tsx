@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Map, MapPin } from 'lucide-react';
+import AdBanner from '../components/AdBanner';
 
 export default function Home() {
   return (
@@ -60,6 +61,17 @@ export default function Home() {
               <Link to="/explore" className="text-primary font-bold text-sm hover:underline">查看景點 →</Link>
            </div>
 
+        </div>
+      </section>
+
+      {/* AdSense Placement: Home Bottom */}
+      <section className="pb-16 px-4 max-w-6xl mx-auto">
+        <div className="bg-slate-50 border border-dashed border-gray-300 rounded-xl p-4 text-center">
+          <p className="text-xs text-text-sub mb-2">Google 贊助廣告</p>
+          <AdBanner 
+            dataAdSlot="6944583842" 
+            className="min-h-[100px]"
+          />
         </div>
       </section>
     </div>
