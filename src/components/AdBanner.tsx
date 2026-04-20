@@ -16,14 +16,31 @@ export default function AdBanner({
   const adRef = useRef<HTMLModElement>(null);
 
   useEffect(() => {
-    try {
-      // 確保 React 路由切換時，廣告能被正確推播與渲染
-      if (adRef.current && !adRef.current.getAttribute('data-adsbygoogle-status')) {
-        ((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({});
+    let isPushed = false;
+
+    // 建立一個 ResizeObserver 來監聽廣告區塊的大小變化
+    // 只有當區塊擁有實際寬度（不為 0，不是 display: none 隱藏狀態）時再推播廣告
+    const observer = new ResizeObserver(() => {
+      if (adRef.current && adRef.current.clientWidth > 0 && !isPushed) {
+        try {
+          if (!adRef.current.getAttribute('data-adsbygoogle-status')) {
+            ((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({});
+            isPushed = true;
+            observer.disconnect(); // 成功推播後就停止監聽
+          }
+        } catch (err) {
+          console.error('AdSense initialization error:', err);
+        }
       }
-    } catch (err) {
-      console.error('AdSense initialization error:', err);
+    });
+
+    if (adRef.current) {
+      observer.observe(adRef.current);
     }
+
+    return () => {
+      observer.disconnect();
+    };
   }, []);
 
   return (

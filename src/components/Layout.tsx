@@ -43,7 +43,7 @@ export default function Layout() {
             }`}
           >
             <HeartHandshake size={18} />
-            <span className="hidden sm:inline">支持我們</span>
+            <span className="hidden sm:inline">關於與聯絡</span>
           </Link>
         </nav>
       </header>
@@ -61,7 +61,7 @@ export default function Layout() {
             <div className="flex justify-center gap-4 mt-4">
                <Link to="/privacy-policy" className="hover:text-primary transition-colors">隱私權政策 (Privacy Policy)</Link>
                <Link to="/terms-of-service" className="hover:text-primary transition-colors">使用者條款 (Terms of Service)</Link>
-               <Link to="/support" className="hover:text-primary transition-colors">聯絡我們</Link>
+               <Link to="/support" className="hover:text-primary transition-colors">關於與聯絡</Link>
             </div>
           </div>
         </footer>

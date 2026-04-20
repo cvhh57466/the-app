@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { MapPin, Compass, RefreshCw, X, Map as MapIcon, Database, Grid, MapPinned, Info, Tag, Clock, Ticket, SlidersHorizontal } from 'lucide-react';
 import { Attraction } from '../data';
@@ -39,8 +39,9 @@ function getDistanceInKm(lat1: number, lon1: number, lat2: number, lon2: number)
   return R * c;
 }
 
-// 可選的分類
+// 可選的分類 - 恢復原本乾淨、直覺的固定分類選單
 const CATEGORIES = ["踏青", "美食", "騎車", "藝文", "親子", "購物", "夜景", "歷史"];
+
 const MAX_DISTANCE_OPTIONS = [
   { label: '3 公里', value: 3 },
   { label: '5 公里', value: 5 },
@@ -308,17 +309,6 @@ export default function Explore() {
             </div>
           )}
 
-          {/* AdSense Placement: Explore Sidebar */}
-          <div className="mt-4 pt-6 border-t border-border">
-            <div className="bg-slate-50 border border-dashed border-gray-300 rounded-xl p-3 text-center">
-              <p className="text-[11px] text-text-sub mb-2">廣告贊助</p>
-              <AdBanner 
-                dataAdSlot="6944583842" 
-                className="min-h-[250px]" 
-                dataAdFormat="vertical" // 側邊欄適合直式廣告
-              />
-            </div>
-          </div>
         </aside>
 
         {/* Content Area */}
@@ -386,65 +376,87 @@ export default function Explore() {
                   : null;
 
                 return (
-                  <motion.div
-                    key={item.id}
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ delay: index * 0.05 }}
-                    className="bg-card-bg rounded-2xl p-4 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)] border border-border flex flex-col gap-3 relative group"
-                  >
-                    <div 
-                      className="w-full h-[140px] bg-slate-100 rounded-lg overflow-hidden shrink-0 cursor-pointer relative"
-                      onClick={() => setSelectedAttraction(item)}
+                  <React.Fragment key={item.id}>
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ delay: index * 0.05 }}
+                      className="bg-card-bg rounded-2xl p-4 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)] border border-border flex flex-col gap-3 relative group"
                     >
-                      <img 
-                        src={item.imageUrl} 
-                        alt={item.name}
-                        referrerPolicy="no-referrer"
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                      <div className="absolute bottom-2 left-2 flex gap-1 flex-wrap pr-2">
-                        {item.contextTags?.slice(0,2).map(tag => (
-                          <span key={tag} className="text-[10px] bg-black/60 text-white px-2 py-0.5 rounded backdrop-blur-sm">#{tag}</span>
-                        ))}
-                      </div>
-                    </div>
-                    
-                    <div className="flex-1 flex flex-col">
-                       <div className="flex justify-between items-start gap-2 mb-1">
-                          <h3 
-                            className="text-[18px] font-extrabold text-text-main leading-tight tracking-wide cursor-pointer hover:text-primary transition-colors"
-                            onClick={() => setSelectedAttraction(item)}
-                          >
-                            {item.name}
-                          </h3>
-                       </div>
-                      <p className="text-[13px] text-text-sub leading-[1.5] line-clamp-2">
-                        {item.description}
-                      </p>
-                    </div>
-
-                    <div className="mt-auto pt-2 flex justify-between items-center bg-card-bg">
-                      <div className="flex items-center gap-2">
-                        {distance !== null && (
-                          <span className="text-[12px] font-bold text-accent bg-accent/10 px-2 py-1 rounded">
-                            {distance.toFixed(1)}km
-                          </span>
-                        )}
-                        <span className="text-[12px] text-text-sub flex items-center gap-1 font-bold">
-                           {item.categories[0]}
-                        </span>
+                      <div 
+                        className="w-full h-[140px] bg-slate-100 rounded-lg overflow-hidden shrink-0 cursor-pointer relative"
+                        onClick={() => setSelectedAttraction(item)}
+                      >
+                        <img 
+                          src={item.imageUrl} 
+                          alt={item.name}
+                          referrerPolicy="no-referrer"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                        <div className="absolute bottom-2 left-2 flex gap-1 flex-wrap pr-2">
+                          {item.contextTags?.slice(0,2).map(tag => (
+                            <span key={tag} className="text-[10px] bg-black/60 text-white px-2 py-0.5 rounded backdrop-blur-sm">#{tag}</span>
+                          ))}
+                        </div>
                       </div>
                       
-                      <button
-                        onClick={() => setSelectedAttraction(item)}
-                        className="px-3 py-1.5 rounded-lg border border-primary/30 text-primary text-[12px] font-semibold hover:bg-primary/10 transition-colors flex items-center gap-1"
+                      <div className="flex-1 flex flex-col">
+                         <div className="flex justify-between items-start gap-2 mb-1">
+                            <h3 
+                              className="text-[18px] font-extrabold text-text-main leading-tight tracking-wide cursor-pointer hover:text-primary transition-colors"
+                              onClick={() => setSelectedAttraction(item)}
+                            >
+                              {item.name}
+                            </h3>
+                         </div>
+                        <p className="text-[13px] text-text-sub leading-[1.5] line-clamp-2">
+                          {item.description}
+                        </p>
+                      </div>
+
+                      <div className="mt-auto pt-2 flex justify-between items-center bg-card-bg">
+                        <div className="flex items-center gap-2">
+                          {distance !== null && (
+                            <span className="text-[12px] font-bold text-accent bg-accent/10 px-2 py-1 rounded">
+                              {distance.toFixed(1)}km
+                            </span>
+                          )}
+                          <span className="text-[12px] text-text-sub flex items-center gap-1 font-bold">
+                             {item.categories[0]}
+                          </span>
+                        </div>
+                        
+                        <button
+                          onClick={() => setSelectedAttraction(item)}
+                          className="px-3 py-1.5 rounded-lg border border-primary/30 text-primary text-[12px] font-semibold hover:bg-primary/10 transition-colors flex items-center gap-1"
+                        >
+                          <Info size={14}/> 詳情
+                        </button>
+                      </div>
+                    </motion.div>
+                    
+                    {/* 穿插在景點之間的廣告：放在第2個景點之後 (填補版面) */}
+                    {index === 1 && viewMode === 'grid' && (
+                      <motion.div
+                        key="in-feed-ad"
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ delay: index * 0.05 + 0.05 }}
+                        className="bg-slate-50 rounded-2xl p-4 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)] border border-dashed border-gray-300 flex flex-col items-center justify-center relative overflow-hidden"
                       >
-                        <Info size={14}/> 詳情
-                      </button>
-                    </div>
-                  </motion.div>
+                         <p className="text-[11px] text-text-sub bg-white/80 px-2 py-0.5 rounded-bl-lg absolute top-0 right-0 z-10 backdrop-blur-sm">廣告贊助</p>
+                         <div className="w-full h-full min-h-[250px] flex items-center justify-center pt-2">
+                           <AdBanner 
+                              dataAdSlot="6944583842" 
+                              className="w-full h-full"
+                              dataAdFormat="fluid"
+                           />
+                         </div>
+                      </motion.div>
+                    )}
+                  </React.Fragment>
                 );
               })}
             </AnimatePresence>

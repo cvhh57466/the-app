@@ -17,10 +17,10 @@ export default function Support() {
         </div>
         
         <h1 className="text-3xl md:text-4xl font-extrabold text-text-main mb-4 tracking-tight">
-          支持「桃園趣哪玩」
+          關於我們與聯絡
         </h1>
         <p className="text-lg text-text-sub mb-8 leading-relaxed">
-          這個網站完全免費且無廣告（開發中努力申請中！），旨在讓大家更方便地探索桃園的美。
+          您可以透過這個網站，更方便地探索桃園的美。
           如果您喜歡我們的服務，歡迎透過以下方式支持我們處理伺服器與資料庫的營運成本。
         </p>
 
