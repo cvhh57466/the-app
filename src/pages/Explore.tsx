@@ -7,6 +7,7 @@ import { collection, onSnapshot, query } from 'firebase/firestore';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import AdBanner from '../components/AdBanner';
+import { Helmet } from 'react-helmet-async';
 
 // Fix leaflet default icons in Vite
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
@@ -182,8 +183,23 @@ export default function Explore() {
     return null;
   }
 
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "name": "探索桃園景點 | 桃園趣哪玩",
+    "description": "透過智能篩選，找出桃園在地最適合您的旅遊點。",
+    "url": "https://apineu.live/explore"
+  };
+
   return (
     <>
+      <Helmet>
+        <title>在地景點地圖 - 美食、踏青、打卡名單 | 桃園趣哪玩</title>
+        <meta name="description" content="在地最強的桃園景點地圖！無論是踏青、約會、賞夜景還是室內避雨，依照您的距離與偏好立刻產生 5 個熱門或私房行程。馬上安排您的桃園一日遊！" />
+        <script type="application/ld+json">
+          {JSON.stringify(structuredData)}
+        </script>
+      </Helmet>
       {/* Main Layout */}
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         
@@ -377,6 +393,22 @@ export default function Explore() {
 
                 return (
                   <React.Fragment key={item.id}>
+                    <Helmet>
+                      <script type="application/ld+json">
+                        {JSON.stringify({
+                          "@context": "https://schema.org",
+                          "@type": "TouristAttraction",
+                          "name": item.name,
+                          "description": item.description,
+                          "image": item.imageUrl,
+                          "geo": {
+                            "@type": "GeoCoordinates",
+                            "latitude": item.lat,
+                            "longitude": item.lng
+                          }
+                        })}
+                      </script>
+                    </Helmet>
                     <motion.div
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}

@@ -1,10 +1,31 @@
 import { Link } from 'react-router-dom';
 import { Map, MapPin } from 'lucide-react';
 import AdBanner from '../components/AdBanner';
+import { Helmet } from 'react-helmet-async';
 
 export default function Home() {
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "桃園趣哪玩 | Taoyuan Explorer",
+    "url": "https://apineu.live/",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://apineu.live/explore?q={search_term_string}",
+      "query-input": "required name=search_term_string"
+    },
+    "description": "收錄桃園超過 400 個精彩景點，包含踏青、親子、美食、夜景與歷史古蹟。為您量身打造最佳的桃園旅遊行程。"
+  };
+
   return (
     <div className="flex-1 overflow-y-auto">
+      <Helmet>
+        <title>桃園趣哪玩 | 桃園最齊全在地旅遊指南</title>
+        <meta name="description" content="桃園趣哪玩收錄了桃園超過 400 個精彩景點。不用做功課，我們根據您的偏好，推薦桃園秘境、美食、踏青與住宿行程，馬上說走就走！" />
+        <script type="application/ld+json">
+          {JSON.stringify(structuredData)}
+        </script>
+      </Helmet>
       {/* Hero Section */}
       <section className="relative w-full h-[500px] flex items-center justify-center bg-slate-900 border-b border-border">
         {/* Background Image Overlay */}
