@@ -8,6 +8,7 @@ import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-lea
 import L from 'leaflet';
 import AdBanner from '../components/AdBanner';
 import { Helmet } from 'react-helmet-async';
+import { Helmet } from 'react-helmet-async';
 
 // Fix leaflet default icons in Vite
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
@@ -434,14 +435,15 @@ export default function Explore() {
                       </div>
                       
                       <div className="flex-1 flex flex-col">
-                         <div className="flex justify-between items-start gap-2 mb-1">
-                            <h3 
-                              className="text-[18px] font-extrabold text-text-main leading-tight tracking-wide cursor-pointer hover:text-primary transition-colors"
-                              onClick={() => setSelectedAttraction(item)}
-                            >
-                              {item.name}
-                            </h3>
-                         </div>
+                        <div className="flex justify-between items-start gap-2 mb-1">
+                           <Link 
+                             to={`/place/${item.id}`}
+                             target="_blank"
+                             className="text-[18px] font-extrabold text-text-main leading-tight tracking-wide hover:text-primary transition-colors"
+                           >
+                             {item.name}
+                           </Link>
+                        </div>
                         <p className="text-[13px] text-text-sub leading-[1.5] line-clamp-2">
                           {item.description}
                         </p>

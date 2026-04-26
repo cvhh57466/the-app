@@ -6,6 +6,7 @@ import Home from './pages/Home';
 import Support from './pages/Support';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
+import AttractionDetail from './pages/AttractionDetail';
 
 export default function App() {
   return (
@@ -15,6 +16,7 @@ export default function App() {
           <Route path="/" element={<Layout />}>
             <Route index element={<Home />} />
             <Route path="explore" element={<Explore />} />
+            <Route path="place/:id" element={<AttractionDetail />} />
             <Route path="support" element={<Support />} />
             <Route path="privacy-policy" element={<PrivacyPolicy />} />
             <Route path="terms-of-service" element={<TermsOfService />} />
