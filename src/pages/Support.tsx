@@ -32,7 +32,8 @@ export default function Support() {
             onClick={() => {
               if (typeof window !== 'undefined' && 'gtag' in window) {
                 (window as any).gtag('event', 'conversion', {
-                  'send_to': 'AW-18119197007/XYWACJ6j-aQcEM-C9L9D'
+                  'send_to': 'AW-18119197007/XYWACJ6j-aQcEM-C9L9D',
+                  'transaction_id': ''
                 });
               }
             }}
