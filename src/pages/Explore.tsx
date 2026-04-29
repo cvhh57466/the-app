@@ -8,7 +8,6 @@ import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-lea
 import L from 'leaflet';
 import AdBanner from '../components/AdBanner';
 import { Helmet } from 'react-helmet-async';
-import { Helmet } from 'react-helmet-async';
 
 // Fix leaflet default icons in Vite
 import markerIcon from 'leaflet/dist/images/marker-icon.png';

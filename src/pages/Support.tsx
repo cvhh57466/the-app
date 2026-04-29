@@ -29,6 +29,13 @@ export default function Support() {
             href="https://apineu.lemonsqueezy.com/checkout/buy/eb1274d9-a71a-4cb3-8aa9-b08a0b6fb998"
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => {
+              if (typeof window !== 'undefined' && 'gtag' in window) {
+                (window as any).gtag('event', 'conversion', {
+                  'send_to': 'AW-18119197007/XYWACJ6j-aQcEM-C9L9D'
+                });
+              }
+            }}
             className="flex items-center justify-center gap-3 bg-[#FFDD00] text-gray-900 px-6 py-4 rounded-xl font-bold hover:bg-[#ffc800] transition-colors shadow-sm"
           >
             <Coffee size={24} />
